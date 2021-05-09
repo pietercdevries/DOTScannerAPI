@@ -1,9 +1,12 @@
 package dal
 
 import (
+	"DOTApi/authenticate"
+	"DOTApi/crypto"
 	"DOTApi/models"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 var dataSourceName = "root:@tcp(127.0.0.1:3306)/dot_scanner?parseTime=true"
@@ -150,6 +153,77 @@ func GetScanTypeById(scanTypeId int64) models.ScanType {
 	return scanType
 }
 
+func GetUserByUserNamePassword(userName string, password string) models.User {
+	db, err := sql.Open("mysql", dataSourceName)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var user models.User
+
+	err = db.QueryRow("SELECT `user`.`id`, `user`.`email`, `user`.`password`, `user`.`phone_number`, `user`.`login_attempts`, `user`.`reset_password_code`, `user`.`paid_member` = b'1', `user`.`notification_on` = b'1', `user`.`token`, `user`.`refresh_token`, `user`.`token_expire_date`, `user`.`created_by_user_id` FROM `dot_scanner`.`user` WHERE `user`.`active` = 1 AND `user`.`deleted` = 0 AND `user`.`email` = ?", userName).Scan(&user.Id, &user.Email, &user.Password, &user.PhoneNumber, &user.LoginAttempts, &user.ResetPasswordCode, &user.PaidMember, &user.NotificationOn, &user.Token, &user.RefreshToken, &user.TokenExpireDate, &user.CreatedByUserId)
+	if err != nil {
+		panic(err.Error())
+	}
+	err = db.Close()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	if password == crypto.Decrypt(user.Password) {
+		user.Password = ""
+		user.Token = authenticate.GenerateAuthenticateToken()
+		user.RefreshToken = authenticate.GenerateRefreshToken()
+		user.TokenExpireDate = time.Now().Add(time.Minute * 30)
+
+		UpdateUserTokens(user)
+
+		return user
+	}else {
+		return models.User{}
+	}
+}
+
+func GetUserIdByToken(token string) int64 {
+	db, err := sql.Open("mysql", dataSourceName)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var user models.User
+
+	err = db.QueryRow("SELECT `user`.`id` FROM `dot_scanner`.`user` WHERE `user`.`active` = 1 AND `user`.`deleted` = 0 AND `user`.`token_expire_date` > now() AND `user`.`token` = ?", token).Scan(&user.Id)
+	if err != nil {
+		return 0
+	}
+	err = db.Close()
+	if err != nil {
+		return 0
+	}
+
+	return user.Id
+}
+
+func GetUserIdByRefreshToken(refreshToken string) int64 {
+	db, err := sql.Open("mysql", dataSourceName)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var user models.User
+
+	err = db.QueryRow("SELECT `user`.`id` FROM `dot_scanner`.`user` WHERE `user`.`active` = 1 AND `user`.`deleted` = 0 AND `user`.`refresh_token` = ?", refreshToken).Scan(&user.Id)
+	if err != nil {
+		panic(err.Error())
+	}
+	err = db.Close()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return user.Id
+}
+
 func InsertScan(scan models.Scan) int64 {
 	db, err := sql.Open("mysql", dataSourceName)
 
@@ -204,12 +278,92 @@ func InsertUser(user models.User) int64 {
 		}
 	}(db)
 
-	stmt, err := db.Prepare("INSERT INTO `dot_scanner`.`user`(`email`, `password`, `phone_number`, `paid_member`, `created_by_user_id`) VALUES (?, ?, ?, ?, ?);")
+	stmt, err := db.Prepare("INSERT INTO `dot_scanner`.`user`(`user`.`email`, `user`.`password`, `user`.`phone_number`, `user`.`paid_member`, `user`.`created_by_user_id`) VALUES (?, ?, ?, ?, ?);")
 	if err != nil {
 		panic(err.Error())
 	}
 
 	res, err := stmt.Exec(user.Email, user.Password, user.PhoneNumber, user.PaidMember, user.CreatedByUserId)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	id, err := res.LastInsertId()
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			panic(err.Error())
+		}
+	}(stmt)
+
+	return id
+}
+
+func UpdateUser(user models.User) int64 {
+	db, err := sql.Open("mysql", dataSourceName)
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			panic(err.Error())
+		}
+	}(db)
+
+	stmt, err := db.Prepare("UPDATE `dot_scanner`.`user` SET `user`.`email` = ?, `user`.`password` = ?, `user`.`phone_number` = ?, `user`.`paid_member` = ?, `user`.`created_by_user_id` = ? WHERE `user`.`id` = ?")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	res, err := stmt.Exec(user.Email, user.Password, user.PhoneNumber, user.PaidMember, user.CreatedByUserId, user.Id)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	id, err := res.LastInsertId()
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			panic(err.Error())
+		}
+	}(stmt)
+
+	return id
+}
+
+func UpdateUserTokens(user models.User) int64 {
+	db, err := sql.Open("mysql", dataSourceName)
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			panic(err.Error())
+		}
+	}(db)
+
+	stmt, err := db.Prepare("UPDATE `dot_scanner`.`user` SET `user`.`token` = ?, `user`.`refresh_token` = ?, `user`.`token_expire_date` = ? WHERE `user`.`id` = ?")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	res, err := stmt.Exec(user.Token, user.RefreshToken, user.TokenExpireDate, user.Id)
 	if err != nil {
 		panic(err.Error())
 	}

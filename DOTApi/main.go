@@ -20,6 +20,9 @@ func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", homePage)
 
+	putRequest := myRouter.Methods(http.MethodPut).Subrouter()
+	putRequest.HandleFunc("/api/v1/users", services.RefreshToken).Methods("PUT")
+
 	postRequest := myRouter.Methods(http.MethodPost).Subrouter()
 	postRequest.HandleFunc("/api/v1/users", services.CreateNewUser).Methods("POST")
 	postRequest.HandleFunc("/api/v1/scans", services.CreateNewScan).Methods("POST")
