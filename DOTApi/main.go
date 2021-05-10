@@ -6,6 +6,8 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 func homePage(w http.ResponseWriter, r *http.Request){
@@ -34,9 +36,16 @@ func handleRequests() {
 	getRequest.HandleFunc("/api/v1/scan-types/{id}", services.ReturnSingleScanType).Methods("GET")
 	getRequest.HandleFunc("/api/v1/users/{email}/{password}", services.ReturnSingleUser).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":10000", myRouter))
+	log.Fatal(http.ListenAndServe(":8081", myRouter))
 }
 
 func main() {
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	fmt.Println(exPath)
+
 	handleRequests()
 }

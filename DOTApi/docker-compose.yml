@@ -1,0 +1,24 @@
+version: '3'
+services:
+  db:
+    image: mysql:5.7
+    restart: always
+    volumes:
+      - ./Docker/db_data:/var/lib/mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: c@0Lt3root
+      MYSQL_DATABASE: dot_scanner
+      MYSQL_USER: dotscannersystem
+      MYSQL_PASSWORD: c@0Lt3salessystem
+  web:
+    restart: always
+    depends_on:
+      - db
+    links:
+      - db
+    build: .
+    ports:
+      - "8081:8081"
