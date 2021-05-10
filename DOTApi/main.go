@@ -6,8 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 func homePage(w http.ResponseWriter, r *http.Request){
@@ -40,12 +38,5 @@ func handleRequests() {
 }
 
 func main() {
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	fmt.Println(exPath)
-
 	handleRequests()
 }
