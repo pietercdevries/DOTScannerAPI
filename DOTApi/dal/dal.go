@@ -161,7 +161,7 @@ func GetUserByUserNamePassword(userName string, password string) models.User {
 
 	var user models.User
 
-	err = db.QueryRow("SELECT `user`.`id`, `user`.`email`, `user`.`password`, `user`.`phone_number`, `user`.`paid_member` = b'1', `user`.`notification_on` = b'1', `user`.`token`, `user`.`refresh_token`, `user`.`token_expire_date`, `user`.`created_by_user_id` FROM `dot_scanner`.`user` WHERE `user`.`active` = 1 AND `user`.`deleted` = 0 AND `user`.`email` = ?", userName).Scan(&user.Id, &user.Email, &user.Password, &user.PhoneNumber, &user.PaidMember, &user.NotificationOn, &user.Token, &user.RefreshToken, &user.TokenExpireDate, &user.CreatedByUserId)
+	err = db.QueryRow("SELECT `user`.`id`, `user`.`email`, `user`.`password`, `user`.`phone_number`, `user`.`paid_member` = b'1', `user`.`notification_on` = b'1', `user`.`created_by_user_id` FROM `dot_scanner`.`user` WHERE `user`.`active` = 1 AND `user`.`deleted` = 0 AND `user`.`email` = ?", userName).Scan(&user.Id, &user.Email, &user.Password, &user.PhoneNumber, &user.PaidMember, &user.NotificationOn, &user.CreatedByUserId)
 	if err != nil {
 		panic(err.Error())
 	}
