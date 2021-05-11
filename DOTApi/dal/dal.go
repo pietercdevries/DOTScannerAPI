@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var dataSourceName = "root:@tcp(localhost:3306)/dot_scanner?parseTime=true"
+var dataSourceName = "dotscannersystem:c@0Lt3salessystem@tcp(db:3306)/dot_scanner?parseTime=true"
 
 func GetAllScans() []models.Scan{
 	db, err := sql.Open("mysql", dataSourceName)
