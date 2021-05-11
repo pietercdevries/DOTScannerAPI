@@ -278,7 +278,7 @@ func InsertUser(user models.User) int64 {
 		}
 	}(db)
 
-	stmt, err := db.Prepare("INSERT INTO `dot_scanner`.`user`(`user`.`email`, `user`.`password`, `user`.`phone_number`, `user`.`paid_member`, `user`.`created_by_user_id`) VALUES (?, ?, ?, ?, ?);")
+	stmt, err := db.Prepare("INSERT INTO `dot_scanner`.`user`(`user`.`email`, `user`.`password`, `user`.`phone_number`, `user`.`paid_member`, `user`.`created_by_user_id`, `user`.`reset_password_code`) VALUES (?, ?, ?, ?, ?, '');")
 	if err != nil {
 		panic(err.Error())
 	}
